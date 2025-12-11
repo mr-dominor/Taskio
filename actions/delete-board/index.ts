@@ -1,5 +1,4 @@
 "use server"
-
 import { DeleteBoard } from "./schema";
 import {InputType,ReturnType} from "./type"
 import { createSafeState } from "@/lib/create-safe-state";

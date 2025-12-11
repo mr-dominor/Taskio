@@ -1,13 +1,15 @@
-"use server"
-
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 
+interface Context {
+  params: Promise<{ cardId: string }>; // params is a Promise
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { cardId: string } }
-) {
+  context: Context
+): Promise<NextResponse> {
   try {
     const { userId, orgId } = await auth();
 
@@ -15,7 +17,12 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { cardId } = params;
+    // await context.params because it's a Promise
+    const { cardId } = await context.params;
+
+    if (!cardId) {
+      return new NextResponse("Missing cardId", { status: 400 });
+    }
 
     console.log("🤖🤖🤖 CardId::", cardId);
 

@@ -76,7 +76,7 @@ export const Description = ({ data }: DescriptionProps) => {
                             ref={textareaRef}
                             className="w-full mt-2"
                             placeholder="Add a more detailed description"
-                            defaultValue={data.description || ""}
+                            defaultvalue={data.description || ""}
                             errors={fieldError}
                         />
 
