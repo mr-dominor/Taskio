@@ -64,7 +64,7 @@ const handler = async(data:InputType):Promise<Returntype> =>{
             }
         }
     } catch (error) {
-        console.log(error); 
+        console.error("Stripe Redirect Error:", error);
         return {error:"Something went wrong"}
     }
     revalidatePath(`/organization/${orgId}`)
