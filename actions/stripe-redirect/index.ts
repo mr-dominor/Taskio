@@ -15,7 +15,7 @@ const handler = async(data:InputType):Promise<Returntype> =>{
         return{error:"Not authorized"}
     }
 
-    const settingsUrl = absoluteUrl(`organization/${orgId}`)
+    const settingsUrl = absoluteUrl(`/organization/${orgId}`)
     let url = "";
     try {
         const orgSubscription = await prisma.orgSubscription.findUnique({
