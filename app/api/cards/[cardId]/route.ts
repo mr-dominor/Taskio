@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 export async function GET(req:Request, {params}:{params:{cardId:string}}){
     try {
         const {userId, orgId} = await auth();
-        const {cardId} = await params
+        const {cardId} = params
         console.log("🤖🤖🤖 CardId::",cardId)
         if(!userId || !orgId) {
             return new NextResponse("Unauthorized",{status:401})
