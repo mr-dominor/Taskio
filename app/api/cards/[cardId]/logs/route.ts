@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, context: any) {
     }
 
     // await context.params if it's a promise
-    const params = await context.params; // resolves the promise
+    const params =  context.params; // resolves the promise
     const cardId = params.cardId;
 
     const auditLogs = await prisma.auditLog.findMany({
@@ -31,3 +31,5 @@ export async function GET(request: NextRequest, context: any) {
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
+
+//
