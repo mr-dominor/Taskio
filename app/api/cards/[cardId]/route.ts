@@ -1,8 +1,8 @@
 "use server"
-import { NextResponse } from "next/server";
+import { NextResponse,NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
-export async function GET(req:Request, {params}:{params:{cardId:string}}){
+export async function GET(req:NextRequest, {params}:{params:{cardId:string}}){
     try {
         const {userId, orgId} = await auth();
         const {cardId} = params
