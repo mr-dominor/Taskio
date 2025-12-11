@@ -59,6 +59,9 @@ const handler = async(data:InputType):Promise<Returntype> =>{
                 }
             });
             url = stripeSession.url || "";
+            if(!url){
+                return{error:"Url not built"}
+            }
         }
     } catch (error) {
         console.log(error); 
