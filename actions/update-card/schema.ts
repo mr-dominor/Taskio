@@ -1,0 +1,5 @@
+
+import z from "zod";
+
+export const UpdateCard = z.object({boardId:z.string(),
+    description:z.optional(z.string().min(3,{message:"Description is too short."}),), title:z.optional(z.string().min(3,{message:"Description is too short."})), id: z.string()})
