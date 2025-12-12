@@ -16,6 +16,7 @@ const handler = async(data:InputType):Promise<Returntype> =>{
     }
 
     const settingsUrl = absoluteUrl(`/organization/${orgId}`)
+    console.log("RETURN URL:", settingsUrl);
     let url = "";
     try {
         const orgSubscription = await prisma.orgSubscription.findUnique({
