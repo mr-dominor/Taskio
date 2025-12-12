@@ -1,4 +1,5 @@
 "use server"
+
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { InputType, Returntype } from "./type"
 import { prisma } from "@/lib/db"
@@ -8,68 +9,72 @@ import { absoluteUrl } from "@/lib/utils"
 import { stripe } from "@/lib/stripe"
 import { revalidatePath } from "next/cache"
 
-const handler = async(data:InputType):Promise<Returntype> =>{
-    const {orgId, userId} = await auth()
-    const user = await currentUser();
-    if(!orgId || !userId || !user){
-        return{error:"Not authorized"}
+const handler = async (data: InputType): Promise<Returntype> => {
+  const { orgId, userId } = await auth()
+  const user = await currentUser()
+
+  if (!orgId || !userId || !user) {
+    return { error: "Not authorized" }
+  }
+
+  // Correct absolute URL
+  const settingsUrl = absoluteUrl(`/organization/${orgId}`)
+  console.log("RETURN URL:", settingsUrl)
+
+  try {
+    const existing = await prisma.orgSubscription.findUnique({
+      where: { orgId }
+    })
+
+    // ---------------------------------------------
+    // CASE 1 — Organization already has a Stripe customer: OPEN BILLING PORTAL
+    // ---------------------------------------------
+    if (existing?.stripeCustomerId) {
+      const session = await stripe.billingPortal.sessions.create({
+        return_url: settingsUrl,              // <-- NO session_id placeholder allowed
+        customer: existing.stripeCustomerId
+      })
+
+      return { data: session.url }
     }
 
-    const settingsUrl = absoluteUrl(`/organization/${orgId}`)
-    console.log("RETURN URL:", settingsUrl);
-    let url = "";
-    try {
-        const orgSubscription = await prisma.orgSubscription.findUnique({
-            where:{
-                orgId,
+    // ---------------------------------------------
+    // CASE 2 — No subscription: CREATE CHECKOUT SESSION
+    // ---------------------------------------------
+    const session = await stripe.checkout.sessions.create({
+      success_url: `${settingsUrl}?session_id={CHECKOUT_SESSION_ID}`, // <-- REQUIRED
+      cancel_url: settingsUrl,
+      payment_method_types: ["card"],
+      mode: "subscription",
+      billing_address_collection: "auto",
+      customer_email: user.emailAddresses[0].emailAddress,
+      line_items: [
+        {
+          price_data: {
+            currency: "USD",
+            product_data: {
+              name: "Taskio Pro",
+              description: "Unlimited boards for your organization",
             },
-        });
+            unit_amount: 2000,
+            recurring: { interval: "month" },
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: { orgId },
+    })
 
-        if(orgSubscription && orgSubscription.stripeCustomerId){
-            const stripeSession = await stripe.billingPortal.sessions.create({
-                return_url: settingsUrl,
-                customer: orgSubscription.stripeCustomerId
-            });
-            url = stripeSession.url;
-        }else{
-            const stripeSession = await stripe.checkout.sessions.create({
-                success_url:settingsUrl,
-                cancel_url: settingsUrl,
-                payment_method_types:["card"],
-                mode:"subscription",
-                billing_address_collection:"auto",
-                customer_email:user.emailAddresses[0].emailAddress,
-                line_items:[
-                    {
-                        price_data:{
-                            currency:"USD",
-                            product_data:{
-                                name:"Taskio Pro",
-                                description:"Unlimited boards for your organization"
-                            },
-                            unit_amount:2000,
-                            recurring:{
-                                interval:"month"
-                            },
-                        },
-                        quantity:1,
-                    }
-                ],
-                metadata:{
-                    orgId,
-                }
-            });
-            url = stripeSession.url || "";
-            if(!url){
-                return{error:"Url not built"}
-            }
-        }
-    } catch (error) {
-        console.error("Stripe Redirect Error:", error);
-        return {error:"Something went wrong"}
-    }
+    if (!session.url) return { error: "URL not built" }
+
+    return { data: session.url }
+
+  } catch (error) {
+    console.error("Stripe Redirect Error:", error)
+    return { error: "Something went wrong" }
+  } finally {
     revalidatePath(`/organization/${orgId}`)
-    return {data:url}
+  }
 }
 
-export const stripeRedirect = createSafeState(StripeRedirect,handler)
+export const stripeRedirect = createSafeState(StripeRedirect, handler)
